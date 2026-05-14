@@ -1,0 +1,9 @@
+//package.json, nodemodules and test files are ignored by default
+node_modules/
+__tests__/
+tests/
+.env
+dist/
+.DS_Store
+.VSCode/
+.log
