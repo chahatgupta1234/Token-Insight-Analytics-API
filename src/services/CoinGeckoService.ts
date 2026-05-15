@@ -106,20 +106,28 @@ class CoinGeckoService {
                 })
             );
 
-            const prices = historyResponse.data.prices;
+            const prices = Array.isArray(historyResponse.data.prices) ? historyResponse.data.prices : [];
             const firstPrice = prices[0]?.[1];
             const lastPrice = prices[prices.length - 1]?.[1];
-            const priceChangePercentage24h = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+            const historyPriceChangePercentage = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
                         
             const tokenData = {
                 id: data.id,
-                symbol: data.symbol.toUpperCase(),
+                symbol: data.symbol,
                 name: data.name,
-                current_price: currentPrice,
-                market_cap: marketCap,
-                total_volume: totalVolume,
-                price_change_24h: data.market_data.price_change_percentage_24h,
-                history_days,
+                vs_currency,
+                market_data: {
+                    current_price: currentPrice,
+                    market_cap: marketCap,
+                    total_volume: totalVolume,
+                    price_change_percentage_24h: data.market_data.price_change_percentage_24h,
+                },
+                history: {
+                    days: history_days,
+                    start_price: firstPrice ?? 0,
+                    end_price: lastPrice ?? 0,
+                    price_change_percentage: historyPriceChangePercentage,
+                },
             };
 
             this.cache.set(cacheKey, {

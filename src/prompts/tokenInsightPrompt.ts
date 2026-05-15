@@ -10,11 +10,15 @@ Analyze the following token market data and produce a concise sentiment assessme
 Token:
 - Name: ${token.name}
 - Symbol: ${token.symbol}
-- Current Price USD: ${token.current_price}
-- Market Cap USD: ${token.market_cap}
-- 24h Trading Volume USD: ${token.total_volume}
-- 24h Price Change Percentage: ${token.price_change_24h}
-- History Window Days: ${token.history_days}
+- Quote Currency: ${token.vs_currency}
+- Current Price: ${token.market_data.current_price}
+- Market Cap: ${token.market_data.market_cap}
+- 24h Trading Volume: ${token.market_data.total_volume}
+- 24h Price Change Percentage: ${token.market_data.price_change_percentage_24h}
+- History Window Days: ${token.history.days}
+- Historical Start Price: ${token.history.start_price}
+- Historical End Price: ${token.history.end_price}
+- Historical Price Change Percentage: ${token.history.price_change_percentage}
 
 Analysis Guidelines:
 - Use only the provided data.

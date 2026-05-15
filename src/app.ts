@@ -2,6 +2,7 @@ import express from "express";
 import { logger } from "./logger.js";
 import { AppError } from "./errors/AppError.js";
 import tokenRoutes from "./routes/tokenRoutes.js";
+import hyperliquidRoutes from "./routes/hyperliquidRoutes.js";
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.get("/health", (_req: express.Request, res: express.Response) =>{
 })
 
 app.use("/api", tokenRoutes);
+app.use("/api", hyperliquidRoutes);
 
 //404 handler
 app.use((req: express.Request, res: express.Response) => {
