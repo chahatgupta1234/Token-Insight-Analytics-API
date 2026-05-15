@@ -65,6 +65,16 @@ HyperLiquid PnL:
 curl --location 'http://localhost:3000/api/hyperliquid/0xab11bfc2e491378b79675dc3e996ed01ea034d5f/pnl?start=2025-09-25&end=2025-09-30'
 ```
 
+## Postman Collection
+
+Import the collection from:
+
+`/postman/postman_collection.json`
+
+Shared Postman workspace collection:
+
+https://www.postman.com/gchahat749-4651924/workspace/coingecko-apis/collection/54806757-ef42436d-1276-40d7-abcf-9abf4a05990d?action=share&source=copy-link&creator=54806757
+
 ### 5. Stop The App
 
 Press `Ctrl+C`, then run:

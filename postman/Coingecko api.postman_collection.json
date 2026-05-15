@@ -1,0 +1,178 @@
+{
+  "info": {
+    "_postman_id": "ef42436d-1276-40d7-abcf-9abf4a05990d",
+    "name": "Coingecko api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54806757",
+    "_collection_link": "https://go.postman.co/collection/54806757-ef42436d-1276-40d7-abcf-9abf4a05990d?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Token Insight - Bitcoin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vs_currency\": \"usd\",\n  \"history_days\": 10\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/token/bitcoin/insight",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "token",
+            "bitcoin",
+            "insight"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Token Insight - Ethereum",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vs_currency\": \"usd\",\n  \"history_days\": 30\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/token/ethereum/insight",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "token",
+            "ethereum",
+            "insight"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Token Insight - Chainlink",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vs_currency\": \"usd\",\n  \"history_days\": 30\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/token/chainlink/insight",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "token",
+            "chainlink",
+            "insight"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "HyperLiquid PnL - Active Example",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/hyperliquid/0xab11bfc2e491378b79675dc3e996ed01ea034d5f/pnl?start=2025-09-25&end=2025-09-30",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "hyperliquid",
+            "0xab11bfc2e491378b79675dc3e996ed01ea034d5f",
+            "pnl"
+          ],
+          "query": [
+            {
+              "key": "start",
+              "value": "2025-09-25"
+            },
+            {
+              "key": "end",
+              "value": "2025-09-30"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Invalid Wallet Validation",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    }
+  ]
+}
