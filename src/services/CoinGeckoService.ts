@@ -3,17 +3,18 @@ import { logger } from '../logger.js';
 import { AppError } from '../errors/AppError.js';
 import { tokenResponseSchema } from '../schemas/tokenSchema.js';
 import type { TokenData } from '../types/index.js';
+import { retryOnce } from '../utils/retryOnce.js';
 
 class CoinGeckoService {
     private baseUrl= 'https://api.coingecko.com/api/v3';
     private cache = new Map<string, { data: TokenData; expiresAt: number }>();
-    private cacheTtlMs = 30_000;
+    private cacheTtlMs = 30_000; // 30 seconds
 
-    async getTokenData(id: string, vs_currency: string = 'usd'): Promise<TokenData> {
+    async getTokenData(id: string, vs_currency: string = 'usd', history_days: number = 30): Promise<TokenData> {
         const startedAt = Date.now();
 
         try {
-            const cacheKey = `${id}:${vs_currency}`;
+            const cacheKey = `${id}:${vs_currency}:${history_days}`;
             const cached = this.cache.get(cacheKey);
             if (cached && cached.expiresAt > Date.now()) {
                 logger.info(
@@ -51,14 +52,17 @@ class CoinGeckoService {
                 "CoinGecko request started"
             );
 
-            const response = await axios.get(url, {
-                params,
-                headers: {
-                    Accept: 'application/json',
-                    'User-Agent': 'Token Insight Backend/1.0',
-                },
-                timeout: 10000, // 10 seconds timeout
-            });
+            const response = await retryOnce(() => 
+                    axios.get(url, {
+                    params,
+                    headers: {
+                        Accept: 'application/json',
+                        'User-Agent': 'Token Insight Backend/1.0',
+                    },
+                    timeout: 10000, // 10 seconds timeout
+                })
+            );
+            
 
             logger.info(
                 {
@@ -89,7 +93,24 @@ class CoinGeckoService {
             // Extract other values or use 0 as fallback
             const marketCap = data.market_data.market_cap[vs_currency] ?? 0;
             const totalVolume = data.market_data.total_volume[vs_currency] ?? 0;
-            
+
+            //add history_days to the token data
+            const historyResponse = await retryOnce(() =>
+                axios.get(`${this.baseUrl}/coins/${id}/market_chart`, {
+                    params: {
+                        vs_currency,
+                        days: history_days,
+                        interval: "daily",
+                    },
+                    timeout: 10000,
+                })
+            );
+
+            const prices = historyResponse.data.prices;
+            const firstPrice = prices[0]?.[1];
+            const lastPrice = prices[prices.length - 1]?.[1];
+            const priceChangePercentage24h = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+                        
             const tokenData = {
                 id: data.id,
                 symbol: data.symbol.toUpperCase(),
@@ -98,6 +119,7 @@ class CoinGeckoService {
                 market_cap: marketCap,
                 total_volume: totalVolume,
                 price_change_24h: data.market_data.price_change_percentage_24h,
+                history_days,
             };
 
             this.cache.set(cacheKey, {

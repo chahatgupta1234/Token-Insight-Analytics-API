@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const tokenSchema = z.object({
     vs_currency: z.string().default("usd"),
-    days: z.string().optional(),
+    history_days: z.coerce.number().int().min(1).max(365).default(30),
 });
 
 export const tokenResponseSchema = z.object({
@@ -13,7 +13,7 @@ export const tokenResponseSchema = z.object({
     current_price: z.record(z.string(),z.number()),
     market_cap: z.record(z.string(), z.number().nullable()),
     total_volume: z.record(z.string(), z.number().nullable()),
-    price_change_percentage_24h: z.number()
+    price_change_percentage_24h: z.number(),
   })    
 })
 

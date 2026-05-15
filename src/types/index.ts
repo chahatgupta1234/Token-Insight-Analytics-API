@@ -6,6 +6,7 @@ export interface TokenData {
     market_cap: number;
     total_volume: number;
     price_change_24h: number;
+    history_days: number;
 }
 
 export interface LLMInsight {

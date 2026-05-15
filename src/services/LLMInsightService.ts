@@ -4,114 +4,77 @@ import { logger } from "../logger.js";
 import { llmInsightSchema } from "../schemas/tokenSchema.js";
 import type { LLMInsight, TokenData } from "../types/index.js";
 import { config } from "../config.js";
+import { buildTokenInsightPrompt, tokenInsightPromptVersion } from "../prompts/tokenInsightPrompt.js";
+import { retryOnce } from "../utils/retryOnce.js";
+
 
 export class LLMInsightService {
-    private provider = config.LLM_PROVIDER;
     private model = config.LLM_MODEL;
+    private provider = config.LLM_PROVIDER;
 
     async generateInsight(token: TokenData): Promise<LLMInsight> {
         const startedAt = Date.now();
-        const prompt = `Given the token: ${token.name} (${token.symbol})
-        Current price: $${token.current_price}
-        Market cap: $${token.market_cap}
-        24h volume: $${token.total_volume}
-        24h price change: ${token.price_change_24h}%
-
-Return ONLY valid JSON (no markdown): {"reasoning": "brief analysis", "sentiment": "Bullish|Neutral|Bearish"}`;
-
+        const prompt = buildTokenInsightPrompt(token);
         try {
-            const content = await this.generateWithGemini(prompt, token, startedAt);
+            const content = await this.generateCompletion(prompt, token, startedAt);
 
-            const jsonMatch = content.match(/\{.*\}/s);
-            if (!jsonMatch) {
-                throw new AppError("LLM_INVALID_RESPONSE", 502, "LLM response did not contain valid JSON");
-            }
+            const parsed = JSON.parse(content);
 
-            return llmInsightSchema.parse(JSON.parse(jsonMatch[0]));
+            return llmInsightSchema.parse(parsed);
+
         } catch (error) {
-            if (error instanceof AppError) {
-                throw error;
+            if(axios.isAxiosError(error)){  
+            throw this.toAppError(error);
             }
 
-            if (axios.isAxiosError(error)) {
-                const retryAfter = error.response?.headers["retry-after"];
-                logger.error(
-                    {
-                        status: error.response?.status,
-                        retryAfter,
-                        provider: this.provider,
-                        model: this.model,
-                        message: error.message,
-                    },
-                    "Error generating insight"
-                );
-
-                if (error.response?.status === 401 || error.response?.status === 403) {
-                    throw new AppError(
-                        "LLM_UNAUTHORIZED",
-                        error.response.status,
-                        `${this.provider} rejected the API key`
-                    );
-                }
-
-                if (error.response?.status === 429) {
-                    throw new AppError(
-                        "LLM_RATE_LIMITED",
-                        429,
-                        retryAfter
-                            ? `${this.provider} rate limit exceeded. Retry after ${retryAfter} seconds`
-                            : `${this.provider} rate limit exceeded`
-                    );
-                }
-            } else {
-                logger.error(error, "Error generating insight");
-            }
-
-            throw new AppError("LLM_INSIGHT_ERROR", 500, "Failed to generate insight from LLM");
+            logger.error(error, "Error parsing LLM response");
+            throw new AppError("LLM_INVALID_RESPONSE", 500, "LLM response was not valid JSON");
         }
     }
 
-
-    private async generateWithGemini(prompt: string, token: TokenData, startedAt: number): Promise<string> {
+    private async generateCompletion(prompt: string, token: TokenData, startedAt: number): Promise<string> {
         logger.info(
             {
-                provider: "gemini",
+                provider: this.provider,
                 model: this.model,
                 tokenId: token.id,
                 symbol: token.symbol,
+                promptVersion: tokenInsightPromptVersion,
             },
             "Gemini request started"
         );
 
-        const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
-            {
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: prompt,
-                            },
-                        ],
+        const response = await retryOnce(() =>
+            axios.post(
+                `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
+                {
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    text: prompt,
+                                },
+                            ],
+                        },
+                    ],
+                    generationConfig: {
+                        temperature: 0.5,
+                        responseMimeType: "application/json",
                     },
-                ],
-                generationConfig: {
-                    temperature: 0.5,
-                    responseMimeType: "application/json",
                 },
-            },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": config.GEMINI_API_KEY,
-                },
-                timeout: 10000,
-            }
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": config.GEMINI_API_KEY,
+                    },
+                    timeout: 10000,
+                }
+            )
         );
 
         logger.info(
             {
-                provider: "gemini",
+                provider: this.provider,
                 model: this.model,
                 tokenId: token.id,
                 status: response.status,
@@ -122,6 +85,34 @@ Return ONLY valid JSON (no markdown): {"reasoning": "brief analysis", "sentiment
 
         const parts = response.data.candidates?.[0]?.content?.parts ?? [];
         return parts.map((part: { text?: string }) => part.text ?? "").join("\n");
+    }
+
+    private toAppError(error: unknown): AppError {
+        if (error instanceof AppError) {
+            return error;
+        }
+
+        if (!axios.isAxiosError(error)) {
+            logger.error(error, "Error generating insight");
+            return new AppError("LLM_INSIGHT_ERROR", 500, "Failed to generate insight from LLM");
+        }
+
+        const status = error.response?.status;
+        const retryAfter = error.response?.headers["retry-after"];
+        logger.error({ status, retryAfter, provider: this.provider, model: this.model, message: error.message }, "Error generating insight");
+
+        if (status === 401 || status === 403) {
+            return new AppError("LLM_UNAUTHORIZED", status, "Gemini rejected the API key");
+        }
+
+        if (status === 429) {
+            const message = retryAfter
+                ? `Gemini rate limit exceeded. Retry after ${retryAfter} seconds`
+                : "Gemini rate limit exceeded";
+            return new AppError("LLM_RATE_LIMITED", 429, message);
+        }
+
+        return new AppError("LLM_INSIGHT_ERROR", 500, "Failed to generate insight from LLM");
     }
 }
 

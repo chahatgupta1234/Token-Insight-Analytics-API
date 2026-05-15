@@ -19,6 +19,7 @@ export async function getTokenInsight(req: Request, res: Response, next: NextFun
 
         //validating the query parameters
         const queryParams = tokenSchema.parse(req.query);
+        const requestParams =  tokenSchema.parse(req.body ?? {});
 
         logger.info(
             {
@@ -29,12 +30,14 @@ export async function getTokenInsight(req: Request, res: Response, next: NextFun
         );
 
         //fetching token data
-        const tokenData = await coinGeckoService.getTokenData(id, queryParams.vs_currency);
+        const tokenData = await coinGeckoService.getTokenData(id, queryParams.vs_currency, requestParams.history_days);
         logger.info(
             {
                 tokenId: id,
                 symbol: tokenData.symbol,
                 price: tokenData.current_price,
+                historyDays: requestParams.history_days,
+                durationMs: Date.now() - startedAt,
             },
             "Token data fetched"
         );
